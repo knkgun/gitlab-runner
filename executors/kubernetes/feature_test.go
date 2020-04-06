@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	k8sversion "k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/rest/fake"
 )
@@ -16,151 +15,198 @@ import (
 func TestKubeClientFeatureChecker(t *testing.T) {
 	kubeClientErr := errors.New("clientErr")
 
+	type expectedCheckResult struct {
+		supported bool
+		err       error
+	}
+
 	version, _ := testVersionAndCodec()
 	tests := map[string]struct {
-		version   k8sversion.Info
-		clientErr error
-		fn        func(*testing.T, featureChecker)
+		version                    k8sversion.Info
+		clientErr                  error
+		expectedHostAliasesResult  expectedCheckResult
+		expectedRuntimeClassResult expectedCheckResult
 	}{
-		"host aliases supported version 1.7": {
+		"version 1.7": {
 			version: k8sversion.Info{
 				Major: "1",
 				Minor: "7",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.NoError(t, err)
-				assert.True(t, supported)
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: true,
+				err:       nil,
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       nil,
 			},
 		},
-		"host aliases supported version 1.11": {
+		"version 1.11": {
 			version: k8sversion.Info{
 				Major: "1",
 				Minor: "11",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.NoError(t, err)
-				assert.True(t, supported)
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: true,
+				err:       nil,
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       nil,
 			},
 		},
-		"host aliases not supported version 1.6": {
+		"version 1.6": {
 			version: k8sversion.Info{
 				Major: "1",
 				Minor: "6",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.NoError(t, err)
-				assert.False(t, supported)
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: false,
+				err:       nil,
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       nil,
 			},
 		},
-		"host aliases cleanup version 1.6 not supported": {
+		"version 1.6 cleanup": {
 			version: k8sversion.Info{
 				Major: "1+535111",
 				Minor: "6.^&5151111",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.NoError(t, err)
-				assert.False(t, supported)
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: false,
+				err:       nil,
 			},
 		},
-		"host aliases cleanup version 1.14 supported": {
+		"version 1.14": {
+			version: k8sversion.Info{
+				Major: "1",
+				Minor: "14",
+			},
+			clientErr: nil,
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: true,
+				err:       nil,
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: true,
+				err:       nil,
+			},
+		},
+		"version 1.14 cleanup": {
 			version: k8sversion.Info{
 				Major: "1*)(535111",
 				Minor: "14^^%&5151111",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.NoError(t, err)
-				assert.True(t, supported)
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: true,
+				err:       nil,
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: true,
+				err:       nil,
 			},
 		},
-		"host aliases cleanup invalid version with leading characters not supported": {
+		"invalid version with leading characters": {
 			version: k8sversion.Info{
 				Major: "+1",
 				Minor: "-14",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.Error(t, err)
-				assert.False(t, supported)
-				assert.ErrorIs(t, err, &badVersionError{})
-				assert.Contains(t, err.Error(), "parsing Kubernetes version +1.-14")
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: false,
+				err:       new(badVersionError),
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       new(badVersionError),
 			},
 		},
-		"host aliases invalid version": {
+		"invalid version": {
 			version: k8sversion.Info{
 				Major: "aaa",
 				Minor: "bbb",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.Error(t, err)
-				assert.False(t, supported)
-				assert.ErrorIs(t, err, &badVersionError{})
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: false,
+				err:       new(badVersionError),
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       new(badVersionError),
 			},
 		},
-		"host aliases empty version": {
+		"empty version": {
 			version: k8sversion.Info{
 				Major: "",
 				Minor: "",
 			},
 			clientErr: nil,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.Error(t, err)
-				assert.False(t, supported)
-				assert.ErrorIs(t, err, &badVersionError{})
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: false,
+				err:       new(badVersionError),
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       new(badVersionError),
 			},
 		},
-		"host aliases kube client error": {
+		"kube client error": {
 			version: k8sversion.Info{
 				Major: "",
 				Minor: "",
 			},
 			clientErr: kubeClientErr,
-			fn: func(t *testing.T, fc featureChecker) {
-				supported, err := fc.IsHostAliasSupported()
-				require.Error(t, err)
-				assert.ErrorIs(t, err, kubeClientErr)
-				assert.False(t, supported)
+			expectedHostAliasesResult: expectedCheckResult{
+				supported: false,
+				err:       kubeClientErr,
+			},
+			expectedRuntimeClassResult: expectedCheckResult{
+				supported: false,
+				err:       kubeClientErr,
 			},
 		},
 	}
 
 	for tn, tt := range tests {
-		t.Run(tn, func(t *testing.T) {
-			rt := func(request *http.Request) (response *http.Response, err error) {
-				if tt.clientErr != nil {
-					return nil, tt.clientErr
-				}
-
-				ver, _ := json.Marshal(tt.version)
-				resp := &http.Response{
-					StatusCode: http.StatusOK,
-					Body: FakeReadCloser{
-						Reader: bytes.NewReader(ver),
-					},
-				}
-				resp.Header = make(http.Header)
-				resp.Header.Add("Content-Type", "application/json")
-
-				return resp, nil
-			}
-			fc := kubeClientFeatureChecker{
-				kubeClient: testKubernetesClient(version, fake.CreateHTTPClient(rt)),
+		rt := func(request *http.Request) (response *http.Response, err error) {
+			if tt.clientErr != nil {
+				return nil, tt.clientErr
 			}
 
-			tt.fn(t, &fc)
+			ver, _ := json.Marshal(tt.version)
+			resp := &http.Response{
+				StatusCode: http.StatusOK,
+				Body: FakeReadCloser{
+					Reader: bytes.NewReader(ver),
+				},
+			}
+			resp.Header = make(http.Header)
+			resp.Header.Add("Content-Type", "application/json")
+
+			return resp, nil
+		}
+		fc := kubeClientFeatureChecker{
+			kubeClient: testKubernetesClient(version, fake.CreateHTTPClient(rt)),
+		}
+
+		t.Run("host aliases "+tn, func(t *testing.T) {
+			supported, err := fc.IsHostAliasSupported()
+			assert.Equal(t, tt.expectedHostAliasesResult.supported, supported)
+			assert.True(t, errors.Is(err, tt.expectedHostAliasesResult.err))
+		})
+
+		t.Run("runtime class "+tn, func(t *testing.T) {
+			supported, err := fc.IsRuntimeClassSupported()
+			assert.Equal(t, tt.expectedRuntimeClassResult.supported, supported)
+			assert.True(t, errors.Is(err, tt.expectedRuntimeClassResult.err))
 		})
 	}
 }

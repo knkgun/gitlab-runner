@@ -860,6 +860,16 @@ func (s *executor) getHostAliases() ([]api.HostAlias, error) {
 	return createHostAliases(s.options.Services, s.Config.Kubernetes.GetHostAliases())
 }
 
+type preparePodConfigOptions struct {
+	labels           map[string]string
+	annotations      map[string]string
+	services         []api.Container
+	initContainers   []api.Container
+	imagePullSecrets []api.LocalObjectReference
+	hostAliases        []api.HostAlias
+	runtimeClassName *string
+}
+
 func (s *executor) setupBuildPod(initContainers []api.Container) error {
 	s.Debugln("Setting up build pod")
 
@@ -902,7 +912,22 @@ func (s *executor) setupBuildPod(initContainers []api.Container) error {
 		return err
 	}
 
-	podConfig := s.preparePodConfig(labels, annotations, podServices, imagePullSecrets, hostAliases, initContainers)
+	runtimeClassName, err := s.prepareRuntimeClassName()
+	if err != nil {
+		return err
+	}
+
+	prepareOptions := preparePodConfigOptions{
+		labels:           labels,
+		annotations:      annotations,
+		services:         podServices,
+		imagePullSecrets: imagePullSecrets,
+		hostAliases:      hostAliases,
+		runtimeClassName: runtimeClassName,
+		initContainers:   initContainers,
+	}
+
+	podConfig := s.preparePodConfig(prepareOptions)
 
 	s.Debugln("Creating build pod")
 	pod, err := s.kubeClient.CoreV1().Pods(s.configurationOverwrites.namespace).Create(&podConfig)
@@ -919,21 +944,15 @@ func (s *executor) setupBuildPod(initContainers []api.Container) error {
 	return nil
 }
 
-func (s *executor) preparePodConfig(
-	labels, annotations map[string]string,
-	services []api.Container,
-	imagePullSecrets []api.LocalObjectReference,
-	hostAliases []api.HostAlias,
-	initContainers []api.Container,
-) api.Pod {
+func (s *executor) preparePodConfig(opts preparePodConfigOptions) api.Pod {
 	buildImage := s.Build.GetAllVariables().ExpandValue(s.options.Image.Name)
 
 	pod := api.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: s.Build.ProjectUniqueName(),
 			Namespace:    s.configurationOverwrites.namespace,
-			Labels:       labels,
-			Annotations:  annotations,
+			Labels:       opts.labels,
+			Annotations:  opts.annotations,
 		},
 		Spec: api.PodSpec{
 			Volumes:            s.getVolumes(),
@@ -941,9 +960,8 @@ func (s *executor) preparePodConfig(
 			RestartPolicy:      api.RestartPolicyNever,
 			NodeSelector:       s.Config.Kubernetes.NodeSelector,
 			Tolerations:        s.Config.Kubernetes.GetNodeTolerations(),
-			InitContainers:     initContainers,
+			InitContainers:     opts.initContainers,
 			Containers: append([]api.Container{
-				// TODO use the build and helper template here
 				s.buildContainer(
 					buildContainerName,
 					buildImage,
@@ -960,15 +978,19 @@ func (s *executor) preparePodConfig(
 					s.configurationOverwrites.helperLimits,
 					s.BuildShell.DockerCommand...,
 				),
-			}, services...),
+			}, opts.services...),
 			TerminationGracePeriodSeconds: &s.Config.Kubernetes.TerminationGracePeriodSeconds,
-			ImagePullSecrets:              imagePullSecrets,
+			ImagePullSecrets:              opts.imagePullSecrets,
 			SecurityContext:               s.Config.Kubernetes.GetPodSecurityContext(),
-			HostAliases:                   hostAliases,
+			HostAliases:                   opts.hostAliases,
 			Affinity:                      s.Config.Kubernetes.GetAffinity(),
 			DNSPolicy:                     s.getDNSPolicy(),
 			DNSConfig:                     s.Config.Kubernetes.GetDNSConfig(),
 		},
+	}
+
+	if opts.runtimeClassName != nil {
+		pod.Spec.RuntimeClassName = opts.runtimeClassName
 	}
 
 	return pod
@@ -1032,6 +1054,21 @@ func (s *executor) makePodProxyServices() ([]api.Service, error) {
 	}
 
 	return proxyServices, nil
+}
+
+func (s *executor) prepareRuntimeClassName() (*string, error) {
+	if s.Config.Kubernetes.RuntimeClassName == "" {
+		return nil, nil
+	}
+
+	supportsRuntimeClass, err := s.featureChecker.IsRuntimeClassSupported()
+	if err != nil {
+		return nil, err
+	} else if !supportsRuntimeClass {
+		return nil, errors.New("runtime classes require Kubernetes 1.14 or later")
+	}
+
+	return &s.Config.Kubernetes.RuntimeClassName, nil
 }
 
 func (s *executor) prepareServiceConfig(name string, ports []api.ServicePort) api.Service {

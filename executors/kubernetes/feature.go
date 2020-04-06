@@ -11,6 +11,7 @@ import (
 
 type featureChecker interface {
 	IsHostAliasSupported() (bool, error)
+	IsRuntimeClassSupported() (bool, error)
 }
 
 type kubeClientFeatureChecker struct {
@@ -20,22 +21,14 @@ type kubeClientFeatureChecker struct {
 // https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
 var minimumHostAliasesVersionRequired, _ = version.NewVersion("1.7")
 
-type badVersionError struct {
-	major string
-	minor string
-	inner error
-}
-
-func (s *badVersionError) Error() string {
-	return fmt.Sprintf("parsing Kubernetes version %s.%s - %s", s.major, s.minor, s.inner)
-}
-
-func (s *badVersionError) Is(err error) bool {
-	_, ok := err.(*badVersionError)
-	return ok
-}
+// https://kubernetes.io/docs/concepts/containers/runtime-class/
+var minimumRuntimeClassVersionRequired, _ = version.NewVersion("1.14")
 
 func (c *kubeClientFeatureChecker) IsHostAliasSupported() (bool, error) {
+	return c.isFeatureSupported(minimumHostAliasesVersionRequired)
+}
+
+func (c *kubeClientFeatureChecker) isFeatureSupported(minimumVersionRequired *version.Version) (bool, error) {
 	verInfo, err := c.kubeClient.ServerVersion()
 	if err != nil {
 		return false, err
@@ -55,10 +48,29 @@ func (c *kubeClientFeatureChecker) IsHostAliasSupported() (bool, error) {
 		}
 	}
 
-	supportsHostAliases := ver.GreaterThan(minimumHostAliasesVersionRequired) ||
-		ver.Equal(minimumHostAliasesVersionRequired)
+	featureSupported := ver.GreaterThan(minimumVersionRequired) ||
+		ver.Equal(minimumVersionRequired)
 
-	return supportsHostAliases, nil
+	return featureSupported, nil
+}
+
+func (c *kubeClientFeatureChecker) IsRuntimeClassSupported() (bool, error) {
+	return c.isFeatureSupported(minimumRuntimeClassVersionRequired)
+}
+
+type badVersionError struct {
+	major string
+	minor string
+	inner error
+}
+
+func (s *badVersionError) Error() string {
+	return fmt.Sprintf("parsing Kubernetes version %s.%s - %s", s.major, s.minor, s.inner)
+}
+
+func (s *badVersionError) Is(err error) bool {
+	_, ok := err.(*badVersionError)
+	return ok
 }
 
 // Sometimes kubernetes returns a version which aren't valid semver versions

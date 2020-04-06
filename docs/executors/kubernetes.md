@@ -710,6 +710,28 @@ check_interval = 30
     # ...
 ```
 
+## Using Runtime Class
+
+> [Introduced](https://gitlab.com/gitlab-org/gitlab-runner/-/merge_requests/1996) in GitLab Runner 13.1.
+
+Allows setting the [RuntimeClass](https://kubernetes.io/docs/concepts/containers/runtime-class/) for each job container.
+
+If **runtime_class_name** is specified and the Kubernetes cluster doesn't support the **RuntimeClass** feature, jobs will exit with an error.
+
+If the specified **runtime_class_name** is not configured in your cluster, job pods will fail to create as well.
+
+```toml
+concurrent = 1
+check_interval = 30
+  [[runners]]
+    name = "myRunner"
+    url = "gitlab.example.com"
+    executor = "kubernetes"
+    [runners.kubernetes]
+      runtime_class_name = "myclass"
+```
+
+
 ## Using Docker in your builds
 
 There are a couple of caveats when using Docker in your builds while running on
