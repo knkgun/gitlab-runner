@@ -715,11 +715,11 @@ check_interval = 30
 
 > [Introduced](https://gitlab.com/gitlab-org/gitlab-runner/-/merge_requests/1996) in GitLab Runner 13.1.
 
-Allows setting the [RuntimeClass](https://kubernetes.io/docs/concepts/containers/runtime-class/) for each job container.
+Use `runtime_class_name` to set the [**RuntimeClass**](https://kubernetes.io/docs/concepts/containers/runtime-class/) for each job container.
 
-If **runtime_class_name** is specified and the Kubernetes cluster doesn't support the **RuntimeClass** feature, jobs will exit with an error.
+If you specify `runtime_class_name` and the Kubernetes cluster doesn't support the **RuntimeClass** feature, jobs exit with an error.
 
-If the specified **runtime_class_name** is not configured in your cluster, job pods will fail to create as well.
+If you specify `runtime_class_name` and it's not configured in your cluster, job pods fail to create as well.
 
 ```toml
 concurrent = 1
