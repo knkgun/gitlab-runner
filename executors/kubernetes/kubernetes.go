@@ -873,18 +873,7 @@ type preparePodConfigOptions struct {
 func (s *executor) setupBuildPod(initContainers []api.Container) error {
 	s.Debugln("Setting up build pod")
 
-	podServices := make([]api.Container, len(s.options.Services))
-
-	for i, service := range s.options.Services {
-		resolvedImage := s.Build.GetAllVariables().ExpandValue(service.Name)
-		podServices[i] = s.buildContainer(
-			fmt.Sprintf("svc-%d", i),
-			resolvedImage,
-			service,
-			s.configurationOverwrites.serviceRequests,
-			s.configurationOverwrites.serviceLimits,
-		)
-	}
+	podServices := s.preparePodServices()
 
 	// We set a default label to the pod. This label will be used later
 	// by the services, to link each service to the pod
@@ -898,15 +887,7 @@ func (s *executor) setupBuildPod(initContainers []api.Container) error {
 		annotations[key] = s.Build.Variables.ExpandValue(val)
 	}
 
-	var imagePullSecrets []api.LocalObjectReference
-	for _, imagePullSecret := range s.Config.Kubernetes.ImagePullSecrets {
-		imagePullSecrets = append(imagePullSecrets, api.LocalObjectReference{Name: imagePullSecret})
-	}
-
-	if s.credentials != nil {
-		imagePullSecrets = append(imagePullSecrets, api.LocalObjectReference{Name: s.credentials.Name})
-	}
-
+	imagePullSecrets := s.prepareImagePullSecrets()
 	hostAliases, err := s.getHostAliases()
 	if err != nil {
 		return err
@@ -942,6 +923,36 @@ func (s *executor) setupBuildPod(initContainers []api.Container) error {
 	}
 
 	return nil
+}
+
+func (s *executor) prepareImagePullSecrets() []api.LocalObjectReference {
+	var imagePullSecrets []api.LocalObjectReference
+	for _, imagePullSecret := range s.Config.Kubernetes.ImagePullSecrets {
+		imagePullSecrets = append(imagePullSecrets, api.LocalObjectReference{Name: imagePullSecret})
+	}
+
+	if s.credentials != nil {
+		imagePullSecrets = append(imagePullSecrets, api.LocalObjectReference{Name: s.credentials.Name})
+	}
+
+	return imagePullSecrets
+}
+
+func (s *executor) preparePodServices() []api.Container {
+	podServices := make([]api.Container, len(s.options.Services))
+
+	for i, service := range s.options.Services {
+		resolvedImage := s.Build.GetAllVariables().ExpandValue(service.Name)
+		podServices[i] = s.buildContainer(
+			fmt.Sprintf("svc-%d", i),
+			resolvedImage,
+			service,
+			s.configurationOverwrites.serviceRequests,
+			s.configurationOverwrites.serviceLimits,
+		)
+	}
+
+	return podServices
 }
 
 func (s *executor) preparePodConfig(opts preparePodConfigOptions) api.Pod {
