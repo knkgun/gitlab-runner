@@ -732,7 +732,6 @@ check_interval = 30
       runtime_class_name = "myclass"
 ```
 
-
 ## Using Docker in your builds
 
 There are a couple of caveats when using Docker in your builds while running on
