@@ -11,16 +11,33 @@ projects that are run on this server. Use only it for running the trusted builds
 
 ## Usage of Docker executor
 
-**Docker can be considered safe when running in non-privileged mode.** To make
-such setup more secure it's advised to run jobs as a user (non-root) in Docker
-containers with disabled sudo or dropped `SETUID` and `SETGID` capabilities.
+**Docker can be considered safe when running in non-privileged mode.**
 
 On the other hand, there's a privileged mode which enables full access to the
 host system, permission to mount and unmount volumes, and run nested containers.
-It's not advised to run containers in privileged mode.
 
-More granular permissions can be configured in non-privileged mode via the
-`cap_add`/`cap_drop` settings.
+DANGER: **Danger:**
+By enabling `privileged` mode, you are effectively disabling all of
+the security mechanisms of containers and exposing your host to privilege
+escalation which can lead to container breakout. For more information, check
+out the official Docker documentation on
+[Runtime privilege and Linux capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities)
+
+**It's not advised to run containers in privileged mode** and unless it's really needed
+the privileged mode should not be used.
+
+It should be considered especially risky in case of runners that are shared between
+several organisations, for example an instance wide runner in a service like GitLab.com,
+where multiple separate organisations can work concurrently.
+
+To make such setup more secure it's advised to run jobs as a user (non-root) in Docker
+containers with disabled sudo or dropped `SETUID` and `SETGID` capabilities. If Docker Machine
+executor is used we also strongly recommend to use the `MaxBuilds = 1` setting, that will ensure
+that a single autoscaled VM (potentially compromised because of the security weakness introduced
+by the privileged mode) will be used to handke one and only one job.
+
+If full privileged mode is not required, more granular permissions can be configured in
+non-privileged mode via the `cap_add`/`cap_drop` settings.
 
 ## Usage of private Docker images with `if-not-present` pull policy
 
