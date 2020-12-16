@@ -148,6 +148,7 @@ Now install GitLab Runner on the Ubuntu instance.
      builds_dir = "/opt/gitlab-runner/builds"
      cache_dir = "/opt/gitlab-runner/cache"
      [runners.custom]
+       volumes = ["/cache", "/path/to-ca-cert-dir/ca.crt:/etc/gitlab-runner/certs/ca.crt:ro"]
        config_exec = "/opt/gitlab-runner/fargate"
        config_args = ["--config", "/etc/gitlab-runner/fargate.toml", "custom", "config"]
        prepare_exec = "/opt/gitlab-runner/fargate"
