@@ -866,7 +866,7 @@ type preparePodConfigOptions struct {
 	services         []api.Container
 	initContainers   []api.Container
 	imagePullSecrets []api.LocalObjectReference
-	hostAliases        []api.HostAlias
+	hostAliases      []api.HostAlias
 	runtimeClassName *string
 }
 
@@ -1076,7 +1076,7 @@ func (s *executor) prepareRuntimeClassName() (*string, error) {
 	if err != nil {
 		return nil, err
 	} else if !supportsRuntimeClass {
-		return nil, errors.New("runtime classes require Kubernetes 1.14 or later")
+		return nil, errors.New("RuntimeClass feature gate not enabled")
 	}
 
 	return &s.Config.Kubernetes.RuntimeClassName, nil

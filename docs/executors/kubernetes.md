@@ -713,7 +713,7 @@ check_interval = 30
 
 ## Using Runtime Class
 
-> [Introduced](https://gitlab.com/gitlab-org/gitlab-runner/-/merge_requests/1996) in GitLab Runner 13.1.
+> [Introduced](https://gitlab.com/gitlab-org/gitlab-runner/-/merge_requests/1996) in GitLab Runner 13.10.
 
 Use `runtime_class_name` to set the [**RuntimeClass**](https://kubernetes.io/docs/concepts/containers/runtime-class/) for each job container.
 
