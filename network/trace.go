@@ -48,8 +48,8 @@ type clientJobTrace struct {
 	finalUpdateTriesCount int
 }
 
-func (c *clientJobTrace) Success() {
-	_ = c.complete(nil, common.JobFailureData{})
+func (c *clientJobTrace) Success() error {
+	return c.complete(nil, common.JobFailureData{})
 }
 
 func (c *clientJobTrace) complete(err error, failureData common.JobFailureData) error {
@@ -71,8 +71,8 @@ func (c *clientJobTrace) complete(err error, failureData common.JobFailureData) 
 	return c.finish()
 }
 
-func (c *clientJobTrace) Fail(err error, failureData common.JobFailureData) {
-	_ = c.complete(err, failureData)
+func (c *clientJobTrace) Fail(err error, failureData common.JobFailureData) error {
+	return c.complete(err, failureData)
 }
 
 func (c *clientJobTrace) Write(data []byte) (n int, err error) {

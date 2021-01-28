@@ -804,7 +804,7 @@ func (b *Build) setTraceStatus(trace JobTrace, err error) {
 
 	if err == nil {
 		logger.Infoln("Job succeeded")
-		trace.Success()
+		terminateJobTraceWithErrorLogging(logger, "Success", func() error { return trace.Success() })
 
 		return
 	}
@@ -813,16 +813,34 @@ func (b *Build) setTraceStatus(trace JobTrace, err error) {
 	if errors.As(err, &buildError) {
 		logger.SoftErrorln("Job failed:", err)
 
-		trace.Fail(err, JobFailureData{
-			Reason:   b.ensureSupportedFailureReason(buildError.FailureReason),
-			ExitCode: buildError.ExitCode,
-		})
+		terminateJobTraceWithErrorLogging(
+			logger,
+			"Fail",
+			func() error {
+				return trace.Fail(err, JobFailureData{
+					Reason:   b.ensureSupportedFailureReason(buildError.FailureReason),
+					ExitCode: buildError.ExitCode,
+				})
+			},
+		)
 
 		return
 	}
 
 	logger.Errorln("Job failed (system failure):", err)
-	trace.Fail(err, JobFailureData{Reason: RunnerSystemFailure})
+	terminateJobTraceWithErrorLogging(
+		logger,
+		"Fail",
+		func() error { return trace.Fail(err, JobFailureData{Reason: RunnerSystemFailure}) },
+	)
+}
+
+func terminateJobTraceWithErrorLogging(logger BuildLogger, name string, fn func() error) {
+	err := fn()
+	if err != nil {
+		logger = logger.WithFields(logrus.Fields{"error": err})
+		logger.Errorln(fmt.Sprintf("Job trace termination %q failed", name))
+	}
 }
 
 func (b *Build) ensureSupportedFailureReason(reason JobFailureReason) JobFailureReason {
