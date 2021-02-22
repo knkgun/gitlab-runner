@@ -7,10 +7,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -55,6 +57,11 @@ func TestDefaultDocker_Exec(t *testing.T) {
 			Once()
 	}
 
+	assertNoOutputs := func(t *testing.T, stdOut *bytes.Buffer, stdErr *bytes.Buffer) {
+		assert.Empty(t, stdOut.String())
+		assert.Empty(t, stdErr.String())
+	}
+
 	tests := map[string]struct {
 		input             io.Reader
 		cancelContext     bool
@@ -62,6 +69,7 @@ func TestDefaultDocker_Exec(t *testing.T) {
 		setupKillWaiter   func(t *testing.T, waiterMock *wait.MockKillWaiter, expectedCtx context.Context)
 		assertLogOutput   func(t *testing.T, logOutput string)
 		expectedError     error
+		assertOutputs     func(t *testing.T, stdOut *bytes.Buffer, stdErr *bytes.Buffer)
 	}{
 		"ContainerAttach error": {
 			cancelContext: false,
@@ -113,6 +121,7 @@ func TestDefaultDocker_Exec(t *testing.T) {
 				assert.Contains(t, logOutput, "finished with aborted")
 			},
 			expectedError: nil,
+			assertOutputs: assertNoOutputs,
 		},
 		"input error": {
 			input:         input(errors.New("input error")),
@@ -131,6 +140,7 @@ func TestDefaultDocker_Exec(t *testing.T) {
 				assert.Contains(t, logOutput, "finished with input error")
 			},
 			expectedError: nil,
+			assertOutputs: assertNoOutputs,
 		},
 		"output error": {
 			input:         input(io.EOF),
@@ -149,6 +159,7 @@ func TestDefaultDocker_Exec(t *testing.T) {
 				assert.Contains(t, logOutput, "finished with output error")
 			},
 			expectedError: nil,
+			assertOutputs: assertNoOutputs,
 		},
 		"killWaiter error": {
 			input:         input(io.EOF),
@@ -166,6 +177,41 @@ func TestDefaultDocker_Exec(t *testing.T) {
 			},
 			assertLogOutput: func(t *testing.T, logOutput string) {},
 			expectedError:   assert.AnError,
+		},
+		"output passed to the writers": {
+			input:         input(io.EOF),
+			cancelContext: false,
+			setupDockerClient: func(t *testing.T, clientMock *docker.MockClient, expectedCtx context.Context) {
+				pr, pw := io.Pipe()
+
+				outWriter := stdcopy.NewStdWriter(pw, stdcopy.Stdout)
+				errWriter := stdcopy.NewStdWriter(pw, stdcopy.Stderr)
+
+				go func() {
+					var err error
+					_, err = fmt.Fprintln(outWriter, "out line 1")
+					require.NoError(t, err)
+					_, err = fmt.Fprintln(errWriter, "err line 1")
+					require.NoError(t, err)
+					_, err = fmt.Fprintln(outWriter, "out line 2")
+					require.NoError(t, err)
+					_, err = fmt.Fprintln(errWriter, "err line 2")
+					require.NoError(t, err)
+					err = pw.Close()
+					require.NoError(t, err)
+				}()
+
+				mockWorkingClient(clientMock, pr, expectedCtx)
+			},
+			setupKillWaiter: func(t *testing.T, waiterMock *wait.MockKillWaiter, expectedCtx context.Context) {
+				waiterMock.On("KillWait", expectedCtx, id).Return(nil).Once()
+			},
+			assertLogOutput: func(t *testing.T, logOutput string) {},
+			expectedError:   nil,
+			assertOutputs: func(t *testing.T, stdOut *bytes.Buffer, stdErr *bytes.Buffer) {
+				assert.Equal(t, "out line 1\nout line 2\n", stdOut.String())
+				assert.Equal(t, "err line 1\nerr line 2\n", stdErr.String())
+			},
 		},
 	}
 
@@ -186,7 +232,8 @@ func TestDefaultDocker_Exec(t *testing.T) {
 			ctx, cancelFn := context.WithCancel(executorCtx)
 			defer cancelFn()
 
-			out := new(bytes.Buffer)
+			outBuf := new(bytes.Buffer)
+			errBuf := new(bytes.Buffer)
 
 			tt.setupDockerClient(t, clientMock, ctx)
 			tt.setupKillWaiter(t, waiterMock, executorCtx)
@@ -195,8 +242,14 @@ func TestDefaultDocker_Exec(t *testing.T) {
 				cancelFn()
 			}
 
+			streams := IOStreams{
+				Input: tt.input,
+				Out:   outBuf,
+				Err:   errBuf,
+			}
+
 			dockerExec := NewDocker(executorCtx, clientMock, waiterMock, logger)
-			err := dockerExec.Exec(ctx, id, tt.input, out)
+			err := dockerExec.Exec(ctx, id, streams)
 
 			logOutput := ""
 			for _, entry := range hook.AllEntries() {
@@ -213,6 +266,8 @@ func TestDefaultDocker_Exec(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
+
+			tt.assertOutputs(t, outBuf, errBuf)
 		})
 	}
 }
