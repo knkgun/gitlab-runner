@@ -27,8 +27,7 @@ func TestBash_CheckForErrors(t *testing.T) {
 	}{
 		"enabled": {
 			checkForErrors: true,
-			// nolint:lll
-			expected: "$'echo \\'hello world\\''\n_runner_exit_code=$?; if [[ $_runner_exit_code -ne 0 ]]; then exit $_runner_exit_code; fi\n",
+			expected:       "$'echo \\'hello world\\''\n_runner_exit_code=$?; if [[ $_runner_exit_code -ne 0 ]]; then exit $_runner_exit_code; fi\n",
 		},
 		"disabled": {
 			checkForErrors: false,

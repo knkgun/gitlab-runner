@@ -29,7 +29,6 @@ var (
 	errTooLarge           = errors.New("too large")
 )
 
-//nolint:lll
 type ArtifactsUploaderCommand struct {
 	common.JobCredentials
 	fileArchiver

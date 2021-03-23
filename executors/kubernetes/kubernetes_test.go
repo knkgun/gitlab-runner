@@ -244,7 +244,6 @@ func testVolumeMountsFeatureFlag(t *testing.T, featureFlagName string, featureFl
 func testVolumesFeatureFlag(t *testing.T, featureFlagName string, featureFlagValue bool) {
 	csiVolFSType := "ext4"
 	csiVolReadOnly := false
-	//nolint:lll
 	tests := map[string]struct {
 		GlobalConfig *common.Config
 		RunnerConfig common.RunnerConfig
@@ -2326,7 +2325,6 @@ func TestSetupBuildPod(t *testing.T) {
 					},
 				},
 			},
-			//nolint:lll
 			VerifyFn: func(t *testing.T, test setupBuildPodTestDef, pod *api.Pod) {
 				require.NotNil(t, pod.Spec.Affinity)
 				require.NotNil(t, pod.Spec.Affinity.NodeAffinity)

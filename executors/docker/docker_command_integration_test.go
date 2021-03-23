@@ -1467,21 +1467,18 @@ func TestChownAndUmaskUsage(t *testing.T) {
 
 	helpers.SkipIntegrationTests(t, "docker", "info")
 
-	// nolint:lll
 	umaskUsedUserNotChanged := func(t *testing.T, output string) {
 		assert.NotContains(t, output, "Changing ownership of files")
 		assert.Regexp(t, `drwxrwxrwx\s+[0-9]+\s+root\s+root\s+[0-9a-zA-Z: ]+\s+director`, output, "directory permissions changed by umask, user root")
 		assert.Regexp(t, `-rwxrwxrwx\s+[0-9]+\s+root\s+root\s+[0-9a-zA-Z: ]+\s+executable-file`, output, "executable-file permissions changed by umask, user root")
 		assert.Regexp(t, `-rw-rw-rw-\s+[0-9]+\s+root\s+root\s+[0-9a-zA-Z: ]+\s+regular-file`, output, "regular-file permissions changed by umask, user root")
 	}
-	// nolint:lll
 	umaskNotUsedUserNotChanged := func(t *testing.T, output string) {
 		assert.NotContains(t, output, "Changing ownership of files")
 		assert.Regexp(t, `drwxr-xr-x\s+[0-9]+\s+root\s+root\s+[0-9a-zA-Z: ]+\s+director`, output, "directory permissions not changed by umask, user root")
 		assert.Regexp(t, `-rwxr-xr-x\s+[0-9]+\s+root\s+root\s+[0-9a-zA-Z: ]+\s+executable-file`, output, "executable-file permissions not changed by umask, user root")
 		assert.Regexp(t, `-rw-r--r--\s+[0-9]+\s+root\s+root\s+[0-9a-zA-Z: ]+\s+regular-file`, output, "regular-file permissions not changed by umask, user root")
 	}
-	// nolint:lll
 	umaskNotUsedUserChanged := func(t *testing.T, output string) {
 		assert.Contains(t, output, "Changing ownership of files")
 		assert.Regexp(t, `drwxr-xr-x\s+[0-9]+\s+alpine\s+alpine\s+[0-9a-zA-Z: ]+\s+director`, output, "directory permissions not changed by umask, user alpine")

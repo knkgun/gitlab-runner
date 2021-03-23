@@ -69,7 +69,6 @@ func TestPowershell_IfCmdShellEscapes(t *testing.T) {
 	writer := &PsWriter{Shell: SNPowershell, EOL: "\r\n"}
 	writer.IfCmd("foo", "x&(y)")
 
-	//nolint:lll
 	assert.Equal(t, "Set-Variable -Name cmdErr -Value $false\r\nTry {\r\n  & \"foo\" \"x&(y)\" 2>$null\r\n  if(!$?) { throw &{if($LASTEXITCODE) {$LASTEXITCODE} else {1}} }\r\n} Catch {\r\n  Set-Variable -Name cmdErr -Value $true\r\n}\r\nif(!$cmdErr) {\r\n", writer.String())
 }
 

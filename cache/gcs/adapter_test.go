@@ -268,7 +268,6 @@ func testAdapterOperation(
 }
 
 func TestAdapterOperation(t *testing.T) {
-	//nolint:lll
 	tests := map[string]adapterOperationTestCase{
 		"error-on-URL-signing": {
 			returnedURL:   "",

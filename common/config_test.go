@@ -199,7 +199,6 @@ func TestConfigParse(t *testing.T) {
 				assert.Equal(t, "image", config.Runners[0].Docker.Image)
 			},
 		},
-		//nolint:lll
 		"check node affinities": {
 			config: `
 				[[runners]]
