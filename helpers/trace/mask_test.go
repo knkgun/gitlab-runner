@@ -127,7 +127,7 @@ func TestVariablesMaskingBoundary(t *testing.T) {
 
 			buffer.Finish()
 
-			content, err := buffer.Bytes(0, 1000)
+			content, err := getBytes(buffer)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, string(content))
 		})
@@ -180,7 +180,7 @@ func TestMaskNonEOFSafeBoundary(t *testing.T) {
 			_, err = buffer.Write([]byte(tc.input))
 			require.NoError(t, err)
 
-			content, err := buffer.Bytes(0, 1000)
+			content, err := getBytes(buffer)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, string(content))

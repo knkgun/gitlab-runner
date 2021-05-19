@@ -95,7 +95,7 @@ func (b *Buffer) Size() int {
 	return int(b.lw.written)
 }
 
-func (b *Buffer) Bytes(offset, n int) ([]byte, error) {
+func (b *Buffer) Reader(offset, n int) (io.Reader, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -103,14 +103,14 @@ func (b *Buffer) Bytes(offset, n int) ([]byte, error) {
 	// To ensure the underlying file has the data requested, we always flush the
 	// buffer.
 	//
-	// If a failure occurs on flushing the data, we store that an error occured so
+	// If a failure occurs on flushing the data, we store that an error occurred so
 	// buffer.Write() can retry and additionally return any error on the write side.
 	if err := b.bufw.Flush(); err != nil {
 		b.failedFlush = true
 		return nil, fmt.Errorf("flushing log buffer: %w", err)
 	}
 
-	return ioutil.ReadAll(io.NewSectionReader(b.logFile, int64(offset), int64(n)))
+	return io.NewSectionReader(b.logFile, int64(offset), int64(n)), nil
 }
 
 func (b *Buffer) Write(p []byte) (int, error) {

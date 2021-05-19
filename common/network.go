@@ -575,7 +575,7 @@ type Network interface {
 	UnregisterRunner(config RunnerCredentials) bool
 	RequestJob(ctx context.Context, config RunnerConfig, sessionInfo *SessionInfo) (*JobResponse, bool)
 	UpdateJob(config RunnerConfig, jobCredentials *JobCredentials, jobInfo UpdateJobInfo) UpdateJobResult
-	PatchTrace(config RunnerConfig, jobCredentials *JobCredentials, content []byte, startOffset int) PatchTraceResult
+	PatchTrace(config RunnerConfig, jobCredentials *JobCredentials, r io.Reader, offset, length int) PatchTraceResult
 	DownloadArtifacts(config JobCredentials, artifactsFile io.WriteCloser, directDownload *bool) DownloadState
 	UploadRawArtifacts(config JobCredentials, reader io.ReadCloser, options ArtifactsOptions) UploadState
 	ProcessJob(config RunnerConfig, buildCredentials *JobCredentials) (JobTrace, error)
