@@ -1,6 +1,7 @@
 package trace
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"hash"
@@ -27,7 +28,14 @@ type Buffer struct {
 	w    io.WriteCloser
 
 	logFile  *os.File
+	bufw     *bufio.Writer
 	checksum hash.Hash32
+
+	// failedFlush indicates that a read which subsequentialy attempted to
+	// flush data to the underlying writer failed. In this scenario, calls to
+	// Write() will immediately attempt to flush and return any error on a
+	// failure.
+	failedFlush bool
 }
 
 type lengthSort []string
@@ -88,12 +96,35 @@ func (b *Buffer) Size() int {
 }
 
 func (b *Buffer) Bytes(offset, n int) ([]byte, error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	// For simplicity, we read only from the file, rather than also the bufio.Writer.
+	// To ensure the underlying file has the data requested, we always flush the
+	// buffer.
+	//
+	// If a failure occurs on flushing the data, we store that an error occured so
+	// buffer.Write() can retry and additionally return any error on the write side.
+	if err := b.bufw.Flush(); err != nil {
+		b.failedFlush = true
+		return nil, fmt.Errorf("flushing log buffer: %w", err)
+	}
+
 	return ioutil.ReadAll(io.NewSectionReader(b.logFile, int64(offset), int64(n)))
 }
 
 func (b *Buffer) Write(p []byte) (int, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
+
+	// if we previously failed to flush to the underlying writer, try again
+	// and return any failure immediately.
+	if b.failedFlush {
+		b.failedFlush = false
+		if err := b.bufw.Flush(); err != nil {
+			return 0, err
+		}
+	}
 
 	n, err := b.w.Write(p)
 	// if we get a log limit exceeded error, we've written the log limit
@@ -182,11 +213,12 @@ func New() (*Buffer, error) {
 
 	buffer := &Buffer{
 		logFile:  logFile,
+		bufw:     bufio.NewWriter(logFile),
 		checksum: crc32.NewIEEE(),
 	}
 
 	buffer.lw = &limitWriter{
-		w:       io.MultiWriter(buffer.logFile, buffer.checksum),
+		w:       io.MultiWriter(buffer.bufw, buffer.checksum),
 		written: 0,
 		limit:   defaultBytesLimit,
 	}
