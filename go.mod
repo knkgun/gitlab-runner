@@ -54,14 +54,16 @@ require (
 	github.com/stretchr/testify v1.6.2-0.20200720104044-95a9d909e987
 	github.com/tevino/abool v0.0.0-20160628101133-3c25f2fe7cd0
 	github.com/urfave/cli v1.20.0
+	gitlab.com/ajwalker/splitic v0.0.0-20210812200711-81cfa6413cb1
 	gitlab.com/ayufan/golang-cli-helpers v0.0.0-20171103152739-a7cf72d604cd
 	gitlab.com/gitlab-org/gitlab-terminal v0.0.0-20210104151801-2a71b03b4462
 	gocloud.dev v0.21.1-0.20201223184910-5094f54ed8bb
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
-	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210225134936-a50acf3fe073
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e
 	golang.org/x/text v0.3.6
+	golang.org/x/tools v0.1.5 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
@@ -69,5 +71,3 @@ require (
 	k8s.io/apimachinery v0.21.1
 	k8s.io/client-go v0.21.1
 )
-
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6

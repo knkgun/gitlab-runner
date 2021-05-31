@@ -102,27 +102,6 @@ check test directives:
   script:
   - make check_test_directives
 
-.check windows test ignore list:
-  stage: test
-  extends:
-  - .rules:merge_request_pipelines:no_docs
-  script:
-  - ./scripts/check_windows_test_ignore_list
-  needs:
-  - 'prepare done'
-  - 'unit test definitions'
-  - 'integration test definitions'
-
-check windows 1809 test ignore list:
-  extends:
-  - .check windows test ignore list
-  - .windows1809_variables
-
-check windows 2004 test ignore list:
-  extends:
-  - .check windows test ignore list
-  - .windows2004_variables
-
 code_quality:
   stage: test
   extends:
@@ -163,31 +142,31 @@ code_quality:
   - .docker
   - .go-cache
   stage: test
-  script:
-  - source ci/touch_make_dependencies
-  - make pull_images_for_tests
-  # Workaround: We call the go_test_with_coverage_report script directly instead of `make parallel_test_execute`
-  #   in order to preserve the script exit code (which would otherwise be returned as make error code 2)
-  - eval $(make export_test_env)
-  - ./scripts/go_test_with_coverage_report execute
+  before_script:
+  - make splitic
   artifacts:
     paths:
-    - .cover/
-    - .testoutput/
+    - .splitic/
     when: always
     expire_in: 7d
+    reports:
+      junit: .splitic/junit_*.xml
 
 unit test:
   extends:
   - .linux test
   needs:
-  - 'unit test definitions'
   - 'clone test repo'
   - 'prepare done'
+  script:
+  - >
+    splitic test \
+      -junit-report .splitic/junit_${CI_NODE_INDEX}.xml \
+      -cover-report .splitic/cover_${CI_NODE_INDEX}.profile -cover -coverpkg gitlab.com/gitlab-org/gitlab-runner \
+      -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_unix.env \
+      ./... \
+      -- -ldflags "$(make print_ldflags)"
   parallel: 2
-  variables:
-    TESTFLAGS: -cover
-    TESTSDEFINITIONSPATH: unit/testsdefinitions.txt
 
 unit test with race:
   extends:
@@ -195,22 +174,37 @@ unit test with race:
   - .go-cache
   variables:
     CGO_ENABLED: "1"
-    TESTFLAGS: -cover -race
   allow_failure:
     exit_codes: 99
+  script:
+  - make splitic
+  - >
+    splitic test \
+      -race \
+      -junit-report .splitic/junit_${CI_NODE_INDEX}.xml \
+      -cover-report .splitic/cover_${CI_NODE_INDEX}.profile -cover -coverpkg gitlab.com/gitlab-org/gitlab-runner \
+      -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_unix.env \
+      -fail-exit-code 99 \
+      ./... \
+      -- -ldflags "$(make print_ldflags)"
 
 integration test:
   extends:
   - .linux test
   needs:
-  - 'integration test definitions'
   - 'clone test repo'
   - 'helper images'
   - 'prepare done'
+  script:
+  - >
+    splitic test \
+      -junit-report .splitic/junit_${CI_NODE_INDEX}.xml \
+      -cover-report .splitic/cover_${CI_NODE_INDEX}.profile -cover -coverpkg gitlab.com/gitlab-org/gitlab-runner \
+      -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_unix.env \
+      -tags integration \
+      ./... \
+      -- -ldflags "$(make print_ldflags)"
   parallel: 4
-  variables:
-    TESTFLAGS: -cover -tags=integration
-    TESTSDEFINITIONSPATH: integration/testsdefinitions.txt
 
 integration test with race:
   extends:
@@ -218,9 +212,20 @@ integration test with race:
   - .go-cache
   variables:
     CGO_ENABLED: "1"
-    TESTFLAGS: -cover -tags=integration -race
   allow_failure:
     exit_codes: 99
+  script:
+  - make splitic
+  - >
+    splitic test \
+      -race \
+      -junit-report .splitic/junit_${CI_NODE_INDEX}.xml \
+      -cover-report .splitic/cover_${CI_NODE_INDEX}.profile -cover -coverpkg gitlab.com/gitlab-org/gitlab-runner \
+      -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_unix.env \
+      -tags integration \
+      -fail-exit-code 99 \
+      ./... \
+      -- -ldflags "$(make print_ldflags)"
 
 fuzz variable mask:
   extends:
@@ -249,11 +254,11 @@ fuzz variable mask:
   before_script:
   - Set-MpPreference -DisableRealtimeMonitoring $true
   - *go-cache-windows_before_script
-  script:
-  - .\ci\test_windows.ps1 $TESTSDEFINITIONSPATH
+  - go install gitlab.com/ajwalker/splitic
+  - $env:Path += ";$(go env GOPATH)/bin"
   artifacts:
     paths:
-    - .testoutput/
+    - .splitic/
     when: always
     expire_in: 7d
   allow_failure:
@@ -262,24 +267,22 @@ fuzz variable mask:
 .windows unit test:
   extends:
   - .windows test
+  parallel: 2
   needs:
-  - 'unit test definitions'
   - 'clone test repo'
   - 'prepare done'
-  variables:
-    TESTFLAGS: '-tags=!integration'
-    TESTSDEFINITIONSPATH: unit\testsdefinitions.txt
+  script:
+  - splitic test -junit-report .splitic/junit_${WINDOWS_VERSION}_${CI_NODE_INDEX}.xml -quarantined ci/.test-failures.${WINDOWS_VERSION}.txt -cover-report .splitic/cover_${CI_NODE_INDEX}.profile -cover -coverpkg gitlab.com/gitlab-org/gitlab-runner -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_windows.env ./...
 
 .windows integration test:
   extends:
   - .windows test
+  parallel: 4
   needs:
-  - 'integration test definitions'
   - 'clone test repo'
   - 'prepare done'
-  variables:
-    TESTFLAGS: '-tags=integration'
-    TESTSDEFINITIONSPATH: integration\testsdefinitions.txt
+  script:
+  - splitic test -junit-report .splitic/junit_${WINDOWS_VERSION}_${CI_NODE_INDEX}.xml -quarantined ci/.test-failures.${WINDOWS_VERSION}.txt -cover-report .splitic/cover_${CI_NODE_INDEX}.profile -cover -coverpkg gitlab.com/gitlab-org/gitlab-runner -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_windows.env -tags integration ./...
 
 # Only test the oldest supported version in merge requests,
 # but test all versions in the default branch.
@@ -341,5 +344,9 @@ integration_k8s:
   - kubectl version
   - kubectl cluster-info
   script:
-  # use env -i to clear parent environment variables for go test
-  - ./scripts/go_test_no_env -tags=integration,kubernetes -v gitlab.com/gitlab-org/gitlab-runner/executors/kubernetes
+  - >
+  splitic test \
+    -tags integration,kubernetes
+    -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_unix.env \
+    gitlab.com/gitlab-org/gitlab-runner/executors/kubernetes \
+    -- -ldflags "$(make print_ldflags)"

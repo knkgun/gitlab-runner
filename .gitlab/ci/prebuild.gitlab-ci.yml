@@ -32,36 +32,6 @@ clone test repo:
     - tmp/gitlab-test
     expire_in: 7d
 
-.test definitions:
-  extends:
-  - .rules:merge_request_pipelines:no_docs
-  - .go-cache
-  stage: prebuild
-  script:
-  - apt-get update
-  - apt-get install -y make
-  - source ci/touch_make_dependencies
-  - mkdir -p $(dirname $TESTSDEFINITIONSPATH)
-  - make parallel_test_prepare
-  artifacts:
-    paths:
-    - $TESTSDEFINITIONSPATH
-    expire_in: 7d
-
-unit test definitions:
-  extends:
-  - .test definitions
-  variables:
-    TESTFLAGS: -cover
-    TESTSDEFINITIONSPATH: unit/testsdefinitions.txt
-
-integration test definitions:
-  extends:
-  - .test definitions
-  variables:
-    TESTFLAGS: -cover -tags=integration
-    TESTSDEFINITIONSPATH: integration/testsdefinitions.txt
-
 ecr public token:
   extends:
   - .rules:release:all

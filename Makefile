@@ -50,6 +50,8 @@ GOCOVER_COBERTURA = gocover-cobertura
 
 GOX = gox
 
+SPLITIC = splitic
+
 MOCKERY_VERSION ?= 1.1.0
 MOCKERY ?= .tmp/mockery-$(MOCKERY_VERSION)
 
@@ -136,15 +138,17 @@ test: helper-dockerarchive-host development_setup simple-test
 simple-test: TEST_PKG ?= $(shell go list ./...)
 simple-test:
 	# use env -i to clear parent environment variables for go test
-	./scripts/go_test_no_env $(TEST_PKG) $(TESTFLAGS) -ldflags "$(GO_LDFLAGS)"
+	go test $(TEST_PKG) $(TESTFLAGS) -ldflags "$(GO_LDFLAGS)"
 
-git1.8-test: export TEST_PKG = gitlab.com/gitlab-org/gitlab-runner/executors/shell gitlab.com/gitlab-org/gitlab-runner/shells
-git1.8-test:
-	$(MAKE) simple-test TESTFLAGS='-cover -tags=integration'
-	$(MAKE) simple-test
+git1.8-test: $(SPLITIC)
+	splitic test -env-passthrough ./scripts/envs/allowlist_common.env -env-passthrough ./scripts/envs/allowlist_unix.env \
+		gitlab.com/gitlab-org/gitlab-runner/executors/shell gitlab.com/gitlab-org/gitlab-runner/shells \
+		-- -ldflags "$(GO_LDFLAGS)"
 
-cobertura_report: $(GOCOVER_COBERTURA)
+cobertura_report: $(GOCOVER_COBERTURA) $(SPLITIC)
 	mkdir -p out/cobertura
+	mkdir -p out/coverage
+	$(SPLITIC) cover-merge $(wildcard .splitic/cover_*.profile) > out/coverage/coverprofile.regular.source.txt
 	$(GOCOVER_COBERTURA) < out/coverage/coverprofile.regular.source.txt > out/cobertura/cobertura-coverage-raw.xml
 	@ # NOTE: Remove package paths.
 	@ # See https://gitlab.com/gitlab-org/gitlab/-/issues/217664
@@ -370,10 +374,13 @@ check_modules:
 
 # development tools
 $(GOCOVER_COBERTURA):
-	go get github.com/boumenot/gocover-cobertura
+	go install github.com/boumenot/gocover-cobertura
 
 $(GOX):
-	go get github.com/mitchellh/gox
+	go install github.com/mitchellh/gox
+
+$(SPLITIC):
+	go install gitlab.com/ajwalker/splitic
 
 $(GOLANGLINT): TOOL_BUILD_DIR := .tmp/build/golangci-lint
 $(GOLANGLINT): $(GOLANGLINT_GOARGS)
