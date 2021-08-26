@@ -1289,7 +1289,6 @@ func TestKubernetesPodSpecContents(t *testing.T) {
 			contents: `{"hostname":"test"}`,
 			expected: `{"hostname":"test"}`,
 		},
-		//TODO: Currently we get no error back in case of invalid yaml to json conversion
 		"invalid yaml": {
 			contents:    `invalid yaml`,
 			expectedErr: &KubernetesPatchConversionError{},
