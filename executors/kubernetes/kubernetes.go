@@ -22,6 +22,9 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/exec"
 
+	jsonpatch "github.com/evanphx/json-patch"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	"gitlab.com/gitlab-org/gitlab-runner/common"
 	"gitlab.com/gitlab-org/gitlab-runner/executors"
 	"gitlab.com/gitlab-org/gitlab-runner/executors/kubernetes/internal/pull"
@@ -1202,6 +1205,11 @@ func (s *executor) setupBuildPod(initContainers []api.Container) error {
 		return err
 	}
 
+	podConfig.Spec, err = s.applyPodSpecMerge(&podConfig.Spec)
+	if err != nil {
+		return err
+	}
+
 	s.Debugln("Creating build pod")
 
 	// TODO: handle the context properly with https://gitlab.com/gitlab-org/gitlab-runner/-/issues/27932
@@ -1292,6 +1300,54 @@ func (s *executor) preparePodConfig(
 	}
 
 	return pod, nil
+}
+
+// Inspired by https://github.com/kubernetes/kubernetes/blob/cde45fb161c5a4bfa7cfe45dfd814f6cc95433f7/cmd/kubeadm/app/util/patches/patches.go#L171
+func (s *executor) applyPodSpecMerge(podSpec *api.PodSpec) (api.PodSpec, error) {
+	patchedData, err := json.Marshal(podSpec)
+	if err != nil {
+		return api.PodSpec{}, err
+	}
+
+	for _, spec := range s.Config.Kubernetes.PodSpec {
+		patchBytes, err := spec.PatchToJSON()
+		if err != nil {
+			return api.PodSpec{}, err
+		}
+
+		switch spec.GetPatchType() {
+		case common.PatchTypeJSONPatchType:
+			var patchObj jsonpatch.Patch
+			patchObj, err = jsonpatch.DecodePatch(patchBytes)
+			if err == nil {
+				patchedData, err = patchObj.Apply(patchedData)
+			}
+
+			if err != nil {
+				return api.PodSpec{}, err
+			}
+		case common.PatchTypeMergePatchType:
+			patchedData, err = jsonpatch.MergePatch(patchedData, patchBytes)
+			if err != nil {
+				return api.PodSpec{}, err
+			}
+		case common.PatchTypeStrategicMergePatchType:
+			patchedData, err = strategicpatch.StrategicMergePatch(
+				patchedData,
+				patchBytes,
+				api.Pod{},
+			)
+			if err != nil {
+				return api.PodSpec{}, err
+			}
+		default:
+			return api.PodSpec{}, fmt.Errorf("unsupported patch type %v", spec.GetPatchType())
+		}
+	}
+
+	var patchedPodSpec api.PodSpec
+	err = json.Unmarshal(patchedData, &patchedPodSpec)
+	return patchedPodSpec, err
 }
 
 func (s *executor) setOwnerReferencesForResources(ownerReferences []metav1.OwnerReference) error {

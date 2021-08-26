@@ -18,6 +18,8 @@ require (
 	github.com/docker/go-units v0.3.2-0.20160802145505-eb879ae3e2b8
 	github.com/docker/machine v0.7.1-0.20170120224952-7b7a141da844
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
+	github.com/evanphx/json-patch v4.11.0+incompatible
+	github.com/evanphx/json-patch/v5 v5.5.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 	github.com/getsentry/raven-go v0.0.0-20160518204710-dffeb57df75d
 	github.com/golang/mock v1.4.4
@@ -67,6 +69,7 @@ require (
 	k8s.io/api v0.21.1
 	k8s.io/apimachinery v0.21.1
 	k8s.io/client-go v0.21.1
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6

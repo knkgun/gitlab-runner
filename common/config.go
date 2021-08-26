@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/BurntSushi/toml"
 	"github.com/docker/go-units"
 	"github.com/sirupsen/logrus"
@@ -354,7 +356,46 @@ type KubernetesConfig struct {
 	DNSPolicy                                         KubernetesDNSPolicy          `toml:"dns_policy,omitempty" json:"dns_policy" long:"dns-policy" env:"KUBERNETES_DNS_POLICY" description:"How Kubernetes should try to resolve DNS from the created pods. If unset, Kubernetes will use the default 'ClusterFirst'. Valid values are: none, default, cluster-first, cluster-first-with-host-net"`
 	DNSConfig                                         KubernetesDNSConfig          `toml:"dns_config" json:"dns_config" description:"Pod DNS config"`
 	ContainerLifecycle                                KubernetesContainerLifecyle  `toml:"container_lifecycle,omitempty" json:"container_lifecycle,omitempty" description:"Actions that the management system should take in response to container lifecycle events"`
+	PodSpec                                           []KubernetesPodSpec          `toml:"pod_spec"`
 }
+
+type KubernetesPodSpec struct {
+	Patch     string                     `toml:"patch"`
+	PatchType KubernetesPodSpecPatchType `toml:"patch_type"`
+}
+
+// PatchToJSON converts Patch to a JSON slice since it accepts json, json patch or yaml data
+func (s *KubernetesPodSpec) PatchToJSON() ([]byte, error) {
+	contentsBytes := []byte(s.Patch)
+	jsonBytes, err := yaml.YAMLToJSONStrict(contentsBytes)
+	if err != nil {
+		var m map[string]interface{}
+		err = json.Unmarshal(contentsBytes, &m)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonBytes, err = json.Marshal(m)
+	}
+
+	return jsonBytes, err
+}
+
+func (s *KubernetesPodSpec) GetPatchType() KubernetesPodSpecPatchType {
+	if s.PatchType == "" {
+		return PatchTypeStrategicMergePatchType
+	}
+
+	return s.PatchType
+}
+
+type KubernetesPodSpecPatchType string
+
+const (
+	PatchTypeJSONPatchType           = KubernetesPodSpecPatchType("json")
+	PatchTypeMergePatchType          = KubernetesPodSpecPatchType("merge")
+	PatchTypeStrategicMergePatchType = KubernetesPodSpecPatchType("strategic")
+)
 
 //nolint:lll
 type KubernetesDNSConfig struct {

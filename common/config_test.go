@@ -3,6 +3,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -323,7 +324,7 @@ func TestConfigParse(t *testing.T) {
 											key = "security"
 											operator = "In"
 											values = ["S1"]
-								
+
 								[[runners.kubernetes.affinity.pod_affinity.preferred_during_scheduling_ignored_during_execution]]
 								weight = 100
 								[runners.kubernetes.affinity.pod_affinity.preferred_during_scheduling_ignored_during_execution.pod_affinity_term]
@@ -406,7 +407,7 @@ func TestConfigParse(t *testing.T) {
 											key = "security"
 											operator = "In"
 											values = ["S1"]
-								
+
 								[[runners.kubernetes.affinity.pod_anti_affinity.preferred_during_scheduling_ignored_during_execution]]
 								weight = 100
 								[runners.kubernetes.affinity.pod_anti_affinity.preferred_during_scheduling_ignored_during_execution.pod_affinity_term]
@@ -1271,6 +1272,37 @@ func TestRunnerSettings_IsFeatureFlagOn(t *testing.T) {
 
 			on := cfg.IsFeatureFlagOn(tt.name)
 			assert.Equal(t, tt.expectedValue, on)
+		})
+	}
+}
+
+func TestKubernetesPodSpecContents(t *testing.T) {
+	tests := map[string]struct {
+		contents    string
+		expected    string
+		expectedErr error
+	}{
+		"yaml to json": {
+			contents: `hostname: "test"`,
+			expected: `{"hostname":"test"}`,
+		},
+		"json to json": {
+			contents: `{"hostname":"test"}`,
+			expected: `{"hostname":"test"}`,
+		},
+		//TODO: Currently we get no error back in case of invalid yaml to json conversion
+		"invalid yaml": {
+			contents:    `invalid yaml`,
+			expectedErr: errors.New("invalid"),
+		},
+	}
+
+	for tn, tt := range tests {
+		t.Run(tn, func(t *testing.T) {
+			s := KubernetesPodSpec{Patch: tt.contents}
+			res, err := s.PatchToJSON()
+			require.Equal(t, tt.expectedErr, err)
+			require.Equal(t, tt.expected, string(res))
 		})
 	}
 }
