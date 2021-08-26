@@ -1335,7 +1335,7 @@ func (s *executor) applyPodSpecMerge(podSpec *api.PodSpec) (api.PodSpec, error) 
 			patchedData, err = strategicpatch.StrategicMergePatch(
 				patchedData,
 				patchBytes,
-				api.Pod{},
+				api.PodSpec{},
 			)
 			if err != nil {
 				return api.PodSpec{}, err
