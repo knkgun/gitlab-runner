@@ -3,7 +3,6 @@
 package common
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -1293,7 +1292,7 @@ func TestKubernetesPodSpecContents(t *testing.T) {
 		//TODO: Currently we get no error back in case of invalid yaml to json conversion
 		"invalid yaml": {
 			contents:    `invalid yaml`,
-			expectedErr: errors.New("invalid"),
+			expectedErr: &KubernetesPatchConversionError{},
 		},
 	}
 
@@ -1301,7 +1300,10 @@ func TestKubernetesPodSpecContents(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			s := KubernetesPodSpec{Patch: tt.contents}
 			res, err := s.PatchToJSON()
-			require.Equal(t, tt.expectedErr, err)
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, tt.expectedErr, err)
+			}
+
 			require.Equal(t, tt.expected, string(res))
 		})
 	}

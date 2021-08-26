@@ -364,21 +364,42 @@ type KubernetesPodSpec struct {
 	PatchType KubernetesPodSpecPatchType `toml:"patch_type"`
 }
 
+type KubernetesPatchConversionError struct {
+	inner error
+}
+
+func (e *KubernetesPatchConversionError) Error() string {
+	return fmt.Sprintf("error converting patch to a known type %v", e.inner)
+}
+
+func (e *KubernetesPatchConversionError) Unwrap() error {
+	return e.inner
+}
+
+func (e *KubernetesPatchConversionError) Is(t error) bool {
+	_, ok := t.(*KubernetesPatchConversionError)
+	return ok
+}
+
 // PatchToJSON converts Patch to a JSON slice since it accepts json, json patch or yaml data
 func (s *KubernetesPodSpec) PatchToJSON() ([]byte, error) {
-	contentsBytes := []byte(s.Patch)
-	jsonBytes, err := yaml.YAMLToJSONStrict(contentsBytes)
-	if err != nil {
-		var m map[string]interface{}
-		err = json.Unmarshal(contentsBytes, &m)
-		if err != nil {
-			return nil, err
-		}
+	patchBytes := []byte(s.Patch)
 
-		jsonBytes, err = json.Marshal(m)
+	var m map[string]interface{}
+	err := json.Unmarshal(patchBytes, &m)
+	if err != nil {
+		err = yaml.Unmarshal(patchBytes, &m)
+		if err != nil {
+			return nil, &KubernetesPatchConversionError{inner: err}
+		}
 	}
 
-	return jsonBytes, err
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, &KubernetesPatchConversionError{inner: err}
+	}
+
+	return b, nil
 }
 
 func (s *KubernetesPodSpec) GetPatchType() KubernetesPodSpecPatchType {
