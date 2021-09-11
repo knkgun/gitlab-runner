@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/saracen/fastzip"
 
@@ -20,6 +21,12 @@ var flateLevels = map[archive.CompressionLevel]int{
 	archive.SlowCompression:    7,
 	archive.SlowestCompression: 9,
 }
+
+const (
+	archiverStagingDir  = "FASTZIP_ARCHIVER_STAGING_DIR"
+	archiverConcurrency = "FASTZIP_ARCHIVER_CONCURRENCY"
+	archiverBufferSize  = "FASTZIP_ARCHIVER_BUFFER_SIZE"
+)
 
 // archiver is a zip stream archiver.
 type archiver struct {
@@ -39,15 +46,18 @@ func NewArchiver(w io.Writer, dir string, level archive.CompressionLevel) (archi
 
 // Archive archives all files provided.
 func (a *archiver) Archive(ctx context.Context, files map[string]os.FileInfo) error {
-	tmpDir, err := ioutil.TempDir("", "fastzip")
+	tmpDir, err := ioutil.TempDir(os.Getenv(archiverStagingDir), "fastzip")
 	if err != nil {
 		return fmt.Errorf("fastzip archiver unable to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
-	opts := []fastzip.ArchiverOption{
-		fastzip.WithStageDirectory(tmpDir),
+	opts, err := getArchiverOptionsFromEnvironment()
+	if err != nil {
+		return err
 	}
+
+	opts = append(opts, fastzip.WithStageDirectory(tmpDir))
 	if a.level == archive.FastestCompression {
 		opts = append(opts, fastzip.WithArchiverMethod(zip.Store))
 	}
@@ -68,4 +78,28 @@ func (a *archiver) Archive(ctx context.Context, files map[string]os.FileInfo) er
 	}
 
 	return err
+}
+
+func getArchiverOptionsFromEnvironment() ([]fastzip.ArchiverOption, error) {
+	var opts []fastzip.ArchiverOption
+
+	if os.Getenv(archiverConcurrency) != "" {
+		concurrency, err := strconv.ParseInt(os.Getenv(archiverConcurrency), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("fastzip archiver concurrency: %w", err)
+		}
+
+		opts = append(opts, fastzip.WithArchiverConcurrency(int(concurrency)))
+	}
+
+	if os.Getenv(archiverBufferSize) != "" {
+		bufferSize, err := strconv.ParseInt(os.Getenv(archiverBufferSize), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("fastzip archiver buffer size: %w", err)
+		}
+
+		opts = append(opts, fastzip.WithArchiverBufferSize(int(bufferSize)))
+	}
+
+	return opts, nil
 }
