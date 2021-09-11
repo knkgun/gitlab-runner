@@ -32,7 +32,7 @@ require (
 	github.com/jpillora/backoff v0.0.0-20170222002228-06c7a16c845d
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kardianos/service v1.2.0
-	github.com/klauspost/compress v1.11.6 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/klauspost/pgzip v1.2.5
 	github.com/kr/pty v1.1.5
@@ -50,10 +50,10 @@ require (
 	github.com/prometheus/common v0.6.0
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/rs/xid v1.3.0 // indirect
-	github.com/saracen/fastzip v0.1.5
+	github.com/saracen/fastzip v0.1.7
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/objx v0.3.0 // indirect
-	github.com/stretchr/testify v1.6.2-0.20200720104044-95a9d909e987
+	github.com/stretchr/testify v1.7.0
 	github.com/tevino/abool v0.0.0-20160628101133-3c25f2fe7cd0
 	github.com/urfave/cli v1.20.0
 	gitlab.com/ayufan/golang-cli-helpers v0.0.0-20171103152739-a7cf72d604cd
@@ -61,8 +61,8 @@ require (
 	gocloud.dev v0.21.1-0.20201223184910-5094f54ed8bb
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/net v0.0.0-20210908191846-a5e095526f91
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20211031064116-611d5d643895
 	golang.org/x/text v0.3.7
 	gopkg.in/ini.v1 v1.63.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
