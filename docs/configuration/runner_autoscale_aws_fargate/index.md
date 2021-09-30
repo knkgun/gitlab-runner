@@ -159,6 +159,13 @@ Now install GitLab Runner on the Ubuntu instance.
        cleanup_args = ["--config", "/etc/gitlab-runner/fargate.toml", "custom", "cleanup"]
    ```
 
+   Note: Self-managed customers, who use a private CA, will need to add this line in order for the Fargate runner to work appropriately under the custom executor:
+
+   ```
+          volumes = ["/cache", "/path/to-ca-cert-dir/ca.crt:/etc/gitlab-runner/certs/ca.crt:ro"]
+   ```
+See [more about this here](https://docs.gitlab.com/runner/configuration/tls-self-signed.html#trustior-the-certificate-for-the-other-cicd-stages)
+
    Note: The section of the `config.toml` file shown below is created by the registration command. Do not change it.
 
    ```toml
