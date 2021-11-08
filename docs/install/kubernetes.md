@@ -622,7 +622,7 @@ Artifact uploads to Google Cloud Storage can experience reduced performance due 
 
 This can be mitigated by increasing the Helper pod CPU Limit:
 
-```
+```yaml
 runners:
   config: |
     [[runners]]
