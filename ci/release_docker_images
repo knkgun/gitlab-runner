@@ -30,6 +30,8 @@ IMAGE_FLAVOR=${IMAGE_FLAVOR:-'ubuntu'}
 image_platform=""
 if [[ "${IMAGE_FLAVOR}" == ubuntu* ]]; then
   image_platform="ubuntu"
+elif [[ "${IMAGE_FLAVOR}" == fips* ]]; then
+  image_platform="fips"
 else
   image_platform="alpine"
 fi
@@ -40,6 +42,7 @@ base_images_from_flavor=(
   ["alpine3.12"]="alpine:3.12.0"
   ["alpine3.13"]="alpine:3.13.6"
   ["alpine3.14"]="alpine:3.14.2"
+  ["fips"]="8.5-200"
 )
 
 get_image_version_from_flavor() {
@@ -201,12 +204,16 @@ done
 
 cp "${runner_home_dir}/install-deps" "${runner_home_dir}/ubuntu/"
 cp "${runner_home_dir}/install-deps" "${runner_home_dir}/alpine/"
+cp "${runner_home_dir}/install-deps" "${runner_home_dir}/fips/"
 for arch in "${TARGET_ARCHS[@]}"; do
     deb_arch=$(if [ "${arch}" == "ppc64le" ]; then echo "ppc64el"; else echo "${arch}"; fi)
     cp "${runner_home_dir}/checksums-${arch}" "out/deb/gitlab-runner_${deb_arch}.deb" \
         "${runner_home_dir}/ubuntu/"
     cp "${runner_home_dir}/checksums-${arch}" "out/binaries/gitlab-runner-linux-${arch}" \
         "${runner_home_dir}/alpine/"
+    # TODO: FIPS
+    cp "${runner_home_dir}/checksums-${arch}" "out/binaries/gitlab-runner-linux-${arch}" \
+        "${runner_home_dir}/fips/"
 done
 
 tags=()

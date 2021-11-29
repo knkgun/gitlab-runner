@@ -8,6 +8,7 @@
   - 'helper images'
   - 'helper images binaries'
   - binaries
+  - binaries-fips
   before_script:
   - |
     # checking GPG signing support
@@ -46,3 +47,4 @@ package-rpm:
       - package-rpm-64bit
       - package-rpm-32bit
       - package-rpm-ibm
+      - package-rpm-fips
