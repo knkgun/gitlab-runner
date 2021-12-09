@@ -90,7 +90,7 @@ The metrics HTTP server can be configured in two ways:
 - with a `listen_address` global configuration option in `config.toml` file,
 - with a `--listen-address` command line option for the `run` command.
 
-You will need to [restart the runner](../commands/index.md#gitlab-runner-restart) if you have added the address to your `config.toml` file.
+You will need to [restart the runner service](../commands/index.md#gitlab-runner-restart) if you have added the address to your `config.toml` file to start the metrics HTTP server.
 
 In both cases the option accepts a string with the format `[host]:<port>`,
 where:
