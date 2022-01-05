@@ -7,7 +7,6 @@ runner-bin: $(GOX)
 
 runner-bin-fips: export GOOS ?= linux
 runner-bin-fips: export GOARCH ?= amd64
-runner-bin-fips: .patched_go_env
 runner-bin-fips:
 	# Building $(NAME) in version $(VERSION) for FIPS $(GOOS) $(GOARCH)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build \
