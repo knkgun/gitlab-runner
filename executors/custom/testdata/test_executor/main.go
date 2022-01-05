@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -184,17 +184,20 @@ func run(shell string, args []string) {
 		setSystemFailure("Missing script for the run stage")
 	}
 
+	output := bytes.NewBuffer(nil)
+
 	cmd := createCommand(shell, args[0], args[1])
+	cmd.Stdout = output
+	cmd.Stderr = output
 
-	fmt.Printf("Executing: Cmd: %#v Args: %#v\n\n", cmd.Path, cmd.Args)
-	scriptContents, _ := ioutil.ReadFile(args[0])
-	fmt.Printf("Executing Script: %v\n\n", string(scriptContents))
+	fmt.Printf("Executing: %#v\n\n", cmd)
 
-	out, err := cmd.CombinedOutput()
-	fmt.Printf(">>>>>>>>>>\n%s\n<<<<<<<<<<\n\n", out)
+	err := cmd.Run()
 	if err != nil {
 		setBuildFailure("Job script exited with: %v", err)
 	}
+
+	fmt.Printf(">>>>>>>>>>\n%s\n<<<<<<<<<<\n\n", output.String())
 }
 
 func mockError() {
