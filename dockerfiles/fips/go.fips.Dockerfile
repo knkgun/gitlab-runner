@@ -7,11 +7,11 @@ RUN INSTALL_PKGS="openssl-devel glibc-devel gcc git golang" &&  \
     dnf install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     dnf clean all -y
 
-ARG GO_VERSION=1.17.2-1
+ARG GO_VERSION=1.17
 
 RUN git clone \
     https://pagure.io/go.git \
-    --branch go-${GO_VERSION}-openssl-fips \
+    --branch go${GO_VERSION}-openssl-fips \
     --single-branch \
     --depth 1 \
     /usr/local/go
