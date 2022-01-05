@@ -1,4 +1,5 @@
-//+build boringcrypto
+//go:build boringcrypto
+// +build boringcrypto
 
 package boring
 
