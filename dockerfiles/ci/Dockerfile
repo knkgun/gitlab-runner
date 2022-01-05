@@ -64,10 +64,6 @@ RUN wget -q https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSI
     rm awscliv2.zip
 
 COPY Makefile* /tmp/
-COPY ci /tmp/ci/
-COPY scripts /tmp/scripts/
-COPY VERSION /tmp
-
 WORKDIR /tmp
 RUN make deps package-deps packagecloud-deps
 
