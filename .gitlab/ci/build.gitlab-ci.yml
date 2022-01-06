@@ -35,6 +35,10 @@ binaries-fips:
   script:
   - source ci/touch_make_dependencies
   - make runner-bin-fips GOOS=$GOOS GOARCH=$GOARCH
+  artifacts:
+    paths:
+      - out/binaries/gitlab-runner-*
+    expire_in: 7d
   parallel:
     matrix:
     - GOOS: linux
