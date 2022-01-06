@@ -803,7 +803,6 @@ To use IAM roles for service accounts, an IAM OIDC provider [must exist for your
      |-------------------|----------|-------|
      | `StringEquals`    |`oidc.eks.<AWS_REGION>.amazonaws.com/id/<OIDC_ID>:sub` | `system:serviceaccount:<GITLAB_RUNNER_NAMESPACE>:<GITLAB_RUNNER_SERVICE_ACCOUNT>` |
 
-
 ### The `[runners.cache.gcs]` section
 
 > Introduced in GitLab Runner 11.3.0.
