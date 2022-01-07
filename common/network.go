@@ -97,6 +97,7 @@ type ConfigInfo struct {
 
 type RegisterRunnerParameters struct {
 	Description    string `json:"description,omitempty"`
+	MaintainerNote string `json:"maintainer_note,omitempty"`
 	Tags           string `json:"tag_list,omitempty"`
 	RunUntagged    bool   `json:"run_untagged"`
 	Locked         bool   `json:"locked"`

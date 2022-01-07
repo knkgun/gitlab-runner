@@ -80,6 +80,7 @@ type RegisterCommand struct {
 	AccessLevel       string `long:"access-level" env:"REGISTER_ACCESS_LEVEL" description:"Set access_level of the runner to not_protected or ref_protected; defaults to not_protected"`
 	MaximumTimeout    int    `long:"maximum-timeout" env:"REGISTER_MAXIMUM_TIMEOUT" description:"What is the maximum timeout (in seconds) that will be set for job when using this Runner"`
 	Paused            bool   `long:"paused" env:"REGISTER_PAUSED" description:"Set Runner to be paused, defaults to 'false'"`
+	MaintainerNote    string `long:"maintainer-note" env:"REGISTER_MAINTAINER_NOTE" description:"Runner's maintainer notes"`
 
 	common.RunnerConfig
 }
@@ -248,6 +249,7 @@ func (s *RegisterCommand) askRunner() {
 	s.Token = s.ask("registration-token", "Enter the registration token:")
 	s.Name = s.ask("name", "Enter a description for the runner:")
 	s.TagList = s.ask("tag-list", "Enter tags for the runner (comma-separated):", true)
+	s.MaintainerNote = s.ask("maintainer-note", "Enter maintainer notes to be associated with the runner:", true)
 
 	if s.TagList == "" {
 		s.RunUntagged = true
@@ -255,6 +257,7 @@ func (s *RegisterCommand) askRunner() {
 
 	parameters := common.RegisterRunnerParameters{
 		Description:    s.Name,
+		MaintainerNote: s.MaintainerNote,
 		Tags:           s.TagList,
 		Locked:         s.Locked,
 		AccessLevel:    s.AccessLevel,
