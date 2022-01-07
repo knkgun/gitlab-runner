@@ -43,6 +43,8 @@ TAR_XZ_UBUNTU += ${BASE_TAR_PATH}-ubuntu-arm64.tar.xz
 TAR_XZ_UBUNTU += ${BASE_TAR_PATH}-ubuntu-s390x.tar.xz
 TAR_XZ_UBUNTU += ${BASE_TAR_PATH}-ubuntu-ppc64le.tar.xz
 
+TAR_XZ_REDHAT += ${BASE_TAR_PATH}-redhat-x86_64-fips.tar.xz
+
 # Binaries that we support for the helper image. We are using the following
 # pattern match:
 # out/binaries/gitlab-runner-helper/gitlab-runner-helper.{{arch}}-{{os}}, these should
@@ -76,6 +78,10 @@ helper-bin-host: ${BASE_BINARY_PATH}.$(shell uname -m)
 # Build the Runner Helper binaries for all supported platforms.
 .PHONY: helper-bin
 helper-bin: $(BINARIES)
+
+# Make sure the fips target is first since it's less general
+${BASE_BINARY_PATH}.%-fips: $(HELPER_GO_FILES) $(GOX)
+	$(GOX) -osarch=$(GO_ARCH_$*) -ldflags "$(GO_LDFLAGS)" -output=$@ $(PKG)/apps/gitlab-runner-helper
 
 ${BASE_BINARY_PATH}.%: $(HELPER_GO_FILES) $(GOX)
 	$(GOX) -osarch=$(GO_ARCH_$*) -ldflags "$(GO_LDFLAGS)" -output=$@ $(PKG)/apps/gitlab-runner-helper
@@ -112,11 +118,24 @@ helper-dockerarchive-alpine3.14: $(TAR_XZ_ALPINE_314)
 .PHONY: helper-dockerarchive-ubuntu
 helper-dockerarchive-ubuntu: $(TAR_XZ_UBUNTU)
 
+.PHONY: helper-dockerarchive-fips
+helper-dockerarchive-fips: $(TAR_XZ_REDHAT)
+
+${BASE_TAR_PATH}-redhat-%-fips.tar.xz: ${BASE_TAR_PATH}-redhat-%-fips.tar
+	xz $(TAR_XZ_ARGS) $<
+
 ${BASE_TAR_PATH}-%-pwsh.tar.xz: ${BASE_TAR_PATH}-%-pwsh.tar
 	xz $(TAR_XZ_ARGS) $<
 
 ${BASE_TAR_PATH}-%.tar.xz: ${BASE_TAR_PATH}-%.tar
 	xz $(TAR_XZ_ARGS) $<
+
+${BASE_TAR_PATH}-redhat-%-fips.tar: export TARGET_FLAVOR_IMAGE_VERSION ?= 8.5-200
+${BASE_TAR_PATH}-redhat-%-fips.tar: export TARGET_DOCKERFILE ?= Dockerfile.fips
+${BASE_TAR_PATH}-redhat-%-fips.tar: export HELPER_BINARY_POSTFIX ?= -fips
+${BASE_TAR_PATH}-redhat-%-fips.tar: ${BASE_BINARY_PATH}.%-fips
+	@mkdir -p $$(dirname $@_)
+	@./ci/build_helper_docker redhat/ubi8 $* $@
 
 # See https://github.com/PowerShell/powershell/releases for values of PWSH_VERSION/PWSH_IMAGE_DATE
 ${BASE_TAR_PATH}-alpine-%-pwsh.tar: export IMAGE_SHELL := pwsh

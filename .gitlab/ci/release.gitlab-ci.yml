@@ -23,6 +23,8 @@
   - make release_docker_images
   parallel:
     matrix:
+    - IMAGE_FLAVOR: fips
+      TARGET_ARCHS: amd64
     - IMAGE_FLAVOR: ubuntu
       TARGET_ARCHS: amd64 arm64 ppc64le
     - IMAGE_FLAVOR: alpine3.12
@@ -31,8 +33,6 @@
       TARGET_ARCHS: amd64 arm64 ppc64le
     - IMAGE_FLAVOR: alpine3.14
       TARGET_ARCHS: amd64 arm64 ppc64le
-    - IMAGE_FLAVOR: fips
-      TARGET_ARCHS: amd64
     # we build s390x images on their own, as they don't play nicely when built
     # concurrently: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/28392
     - IMAGE_FLAVOR: ubuntu

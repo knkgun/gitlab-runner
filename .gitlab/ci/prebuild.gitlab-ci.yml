@@ -1,24 +1,36 @@
-helper images:
+.helper images base:
   extends:
-  - .docker
-  - .go-cache-docker-qemu
-  - .rules:merge_request_pipelines:no_docs
+    - .docker
+    - .go-cache-docker-qemu
+    - .rules:merge_request_pipelines:no_docs
   stage: prebuild
   variables:
     TAR_XZ_ARGS: -f -9
   script:
-  - make "helper-dockerarchive-${IMAGE_BASE}"
+    - make "helper-dockerarchive-${IMAGE_BASE}"
   retry: 2
   artifacts:
     paths:
-    - out/helper-images/
+      - out/helper-images/
     expire_in: 7d
+
+helper images:
+  extends:
+  - '.helper images base'
   parallel:
     matrix:
     - IMAGE_BASE: "alpine"
     - IMAGE_BASE: "alpine3.13"
     - IMAGE_BASE: "alpine3.14"
     - IMAGE_BASE: "ubuntu"
+
+helper images fips:
+  extends:
+    - '.helper images base'
+  image: $GO_FIPS_IMAGE
+  parallel:
+    matrix:
+      - IMAGE_BASE: "fips"
 
 helper images binaries:
   extends:
