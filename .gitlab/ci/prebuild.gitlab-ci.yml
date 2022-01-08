@@ -27,7 +27,8 @@ helper images:
 helper images fips:
   extends:
     - '.helper images base'
-  image: $GO_FIPS_IMAGE
+  needs:
+    - 'fips helper binaries'
   parallel:
     matrix:
       - IMAGE_BASE: "fips"

@@ -205,7 +205,7 @@
   rules:
     - <<: *if-runner-merge-request-pipeline
       changes:
-        - dockerfiles/fips/go.fips.Dockerfile
+        - dockerfiles/ci/go.fips.Dockerfile
         - .gitlab/ci/prepare.gitlab-ci.yml
 
 ##############
