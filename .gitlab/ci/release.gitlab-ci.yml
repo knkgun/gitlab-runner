@@ -19,6 +19,7 @@
   - 'ecr public token'
   - 'binaries'
   - 'package-deb'
+  - 'binaries-fips'
   script:
   - make release_docker_images
   parallel:
@@ -97,6 +98,7 @@
   - 'helper images'
   - 'helper images binaries'
   - 'binaries'
+  - 'binaries-fips'
   - 'package-deb'
   - 'package-rpm'
   before_script:
