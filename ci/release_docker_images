@@ -211,8 +211,10 @@ for arch in "${TARGET_ARCHS[@]}"; do
         "${runner_home_dir}/ubuntu/"
     cp "${runner_home_dir}/checksums-${arch}" "out/binaries/gitlab-runner-linux-${arch}" \
         "${runner_home_dir}/alpine/"
-    cp "${runner_home_dir}/checksums-${arch}" "out/binaries/gitlab-runner-linux-${arch}-fips" \
-        "${runner_home_dir}/fips/"
+    if [[ $arch == "amd64" ]]; then
+        cp "${runner_home_dir}/checksums-${arch}" "out/binaries/gitlab-runner-linux-${arch}-fips" \
+            "${runner_home_dir}/fips/"
+    fi
 done
 
 tags=()
