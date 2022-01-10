@@ -15,7 +15,7 @@ runner-bin-fips:
 		   -o="out/binaries/$(NAME)-$(GOOS)-$(GOARCH)-fips" \
 		   $(PKG)
 
-go-fips-docker: export GO_VERSION ?= 1.17.2-1
+go-fips-docker: export GO_VERSION ?= 1.17
 go-fips-docker: export UBI_VERSION ?= 8.5-200
 go-fips-docker: export BUILD_IMAGE ?= go-fips:$(GO_VERSION)
 go-fips-docker: export BUILD_DOCKERFILE ?= ./dockerfiles/ci/go.fips.Dockerfile
@@ -23,10 +23,12 @@ go-fips-docker:
 	# Building Go FIPS Docker image
 	@./ci/build_go_fips_image
 
-runner-bin-fips-docker: export GO_VERSION ?= 1.17.2-1
+runner-bin-fips-docker: export GO_VERSION ?= 1.17
+runner-bin-fips-docker: export GOOS ?= linux
+runner-bin-fips-docker: export GOARCH ?= amd64
 runner-bin-fips-docker:
 	# Building $(NAME) in version $(VERSION) for FIPS $(GOOS) $(GOARCH)
-	@docker build -t gitlab-runner-fips -f dockerfiles/fips/runner.fips.Dockerfile .
+	@docker build -t gitlab-runner-fips --build-arg GOOS="$(GOOS)" --build-arg GOARCH="$(GOARCH)" --build-arg GO_VERSION="$(GO_VERSION)" -f dockerfiles/fips/runner.fips.Dockerfile .
 	@docker rm -f gitlab-runner-fips && docker create -it --name gitlab-runner-fips gitlab-runner-fips
 	@docker cp gitlab-runner-fips:/gitlab-runner-linux-amd64-fips out/binaries/
 	@docker rm -f gitlab-runner-fips

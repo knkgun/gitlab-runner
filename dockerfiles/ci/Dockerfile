@@ -6,7 +6,7 @@ RUN apt-get update -yq && \
     apt-get install -yq locales make xz-utils \
                         ruby ruby-dev python-pip \
                         dpkg-sig createrepo rpm \
-                        zip libffi-dev jq zip patch && \
+                        zip libffi-dev jq zip && \
     rm -rf /var/lib/apt/lists/*
 
 # Set default locale for the environment
