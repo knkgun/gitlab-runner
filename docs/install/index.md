@@ -31,6 +31,10 @@ You can also view installation instructions in GitLab by going to your project's
 **Settings > CI / CD**, expanding the **Runners** section, and clicking
 **Show runner installation instructions**.
 
+## FIPS Compliant GitLab Runner
+
+- {placeholder for content}
+
 ## Repositories
 
 - [Install using the GitLab repository for Debian/Ubuntu/CentOS/RedHat](linux-repository.md)
